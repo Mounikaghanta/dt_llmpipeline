@@ -15,8 +15,8 @@ from sklearn.preprocessing import StandardScaler
 # ==========================
 # Load training datasets
 # ==========================
-sensor_df = pd.read_excel("data/8months_sensor_faults.xlsx")
-pred_df   = pd.read_excel("data/8months_dt_predictions.xlsx")
+sensor_df = pd.read_excel("data/train/8months_balanced_faults.xlsx")
+pred_df   = pd.read_excel("data/dt_predictions/8months_dt_predictions.xlsx")
 
 sensor_df["Date Time"] = pd.to_datetime(sensor_df["Date Time"])
 pred_df["Date Time"]   = pd.to_datetime(pred_df["Date Time"])
