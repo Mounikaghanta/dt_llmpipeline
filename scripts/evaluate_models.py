@@ -3,10 +3,10 @@ from sklearn.metrics import accuracy_score, recall_score, f1_score
 
 
 pred_df = pd.read_excel("outputs/all_model_predictions.xlsx")
-true_df = pd.read_excel("data/test_balanced_faults.xlsx")
+true_df = pd.read_excel("data/test/test_balanced_faults.xlsx")
 
-pred_df["Date Time"] = pd.to_datetime(pred_df["Date Time"])
-true_df["Date Time"] = pd.to_datetime(true_df["Date Time"])
+pred_df["Date Time"] = pd.to_datetime(pred_df["Date Time"], dayfirst=True)
+true_df["Date Time"] = pd.to_datetime(true_df["Date Time"], dayfirst=True)
 
 
 df = pred_df.merge(

@@ -18,11 +18,36 @@ from sklearn.preprocessing import StandardScaler
 sensor_df = pd.read_excel("data/train/8months_balanced_faults.xlsx")
 pred_df   = pd.read_excel("data/dt_predictions/8months_dt_predictions.xlsx")
 
-sensor_df["Date Time"] = pd.to_datetime(sensor_df["Date Time"])
-pred_df["Date Time"]   = pd.to_datetime(pred_df["Date Time"])
+sensor_df["Date Time"] = pd.to_datetime(
+    sensor_df["Date Time"],
+    format="%d.%m.%Y %H:%M:%S"
+)
 
+pred_df["Date Time"] = pd.to_datetime(
+    pred_df["Date Time"],
+    format="%d.%m.%Y %H:%M:%S"
+)
 df = sensor_df.merge(pred_df, on="Date Time", how="inner")
+# ==========================
+# Clean merged dataframe
+# ==========================
 
+df = df.rename(columns={
+    "T (degC)_x": "T (degC)",
+    "Tdew (degC)_x": "Tdew (degC)",
+    "rh (%)_x": "rh (%)",
+    "binary_label_x": "binary_label"
+})
+
+# drop duplicate columns from DT file
+df = df.drop(columns=[
+    "T (degC)_y",
+    "Tdew (degC)_y",
+    "rh (%)_y",
+    "binary_label_y",
+    "fault_label_x",
+    "fault_label_y"
+], errors="ignore")
 
 # ==========================
 # Build residual features

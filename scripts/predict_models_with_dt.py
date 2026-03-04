@@ -6,14 +6,30 @@ import joblib
 # ==========================
 # Load test datasets
 # ==========================
-sensor_df = pd.read_excel("data/test_sensor_data.xlsx")
-pred_df   = pd.read_excel("data/test_dt_predictions.xlsx")
+sensor_df = pd.read_excel("data/test/test no labels.xlsx")
+pred_df   = pd.read_excel("data/dt_predictions/test_dt_predictions.xlsx")
 
-sensor_df["Date Time"] = pd.to_datetime(sensor_df["Date Time"])
-pred_df["Date Time"]   = pd.to_datetime(pred_df["Date Time"])
+sensor_df["Date Time"] = pd.to_datetime(sensor_df["Date Time"], dayfirst=True)
+
+pred_df["Date Time"]   = pd.to_datetime(pred_df["Date Time"], dayfirst=True)
 
 df = sensor_df.merge(pred_df, on="Date Time", how="inner")
+# Clean merged dataframe
+df = df.rename(columns={
+    "T (degC)_x": "T (degC)",
+    "Tdew (degC)_x": "Tdew (degC)",
+    "rh (%)_x": "rh (%)"
+})
 
+df = df.drop(columns=[
+    "T (degC)_y",
+    "Tdew (degC)_y",
+    "rh (%)_y",
+    "fault_label_x",
+    "fault_label_y",
+    "binary_label_x",
+    "binary_label_y"
+], errors="ignore")
 
 # ==========================
 # Build residual features
