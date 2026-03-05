@@ -4,3 +4,4 @@ outputs/
 __pycache__/
 *.pyc
 data/dt_predictions/
+src/dt_llm.egg-info/

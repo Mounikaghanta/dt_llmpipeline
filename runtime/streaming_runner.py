@@ -1,5 +1,6 @@
 import pandas as pd
 import joblib
+import time
 
 from dt_llm.digital_twin.dt_predictor_v2 import DigitalTwinV2
 from dt_llm.decision.anomaly_gate import AnomalyGate
@@ -7,15 +8,15 @@ from dt_llm.decision.anomaly_gate import AnomalyGate
 # ==========================
 # Load data
 # ==========================
-df = pd.read_excel("data/test/test_sensor_data.xlsx")
-df["Date Time"] = pd.to_datetime(df["Date Time"])
+df = pd.read_excel("data/test/test no labels.xlsx")
+df["Date Time"] = pd.to_datetime(df["Date Time"],dayfirst=True)
 
 # ==========================
 # Load models
 # ==========================
 dt = DigitalTwinV2("models/dt_v2_model_8mo.pkl")
 
-classifier = joblib.load("models/XGBoost_model.pkl")
+classifier = joblib.load("models/MLP_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 
 gate = AnomalyGate()
@@ -36,21 +37,55 @@ results = []
 # ==========================
 # Streaming loop
 # ==========================
+import time
+
+# ==========================
+# Streaming loop
+# ==========================
 for i in range(1, len(df)):
 
     row = df.iloc[i]
     ts = row["Date Time"]
 
+    print("\n=================================================")
+    print("Time:", ts)
+
+    # --------------------------
+    # Sensor values
+    # --------------------------
+    print("\nSensor Measurement")
+    print(f"T  : {row['T (degC)']}")
+    print(f"Td : {row['Tdew (degC)']}")
+    print(f"RH : {row['rh (%)']}")
+
+    # --------------------------
     # DT prediction
+    # --------------------------
     pred = dt.predict(ts)
 
-    # Build classifier features
+    print("\nDigital Twin Prediction")
+    print(f"T_pred  : {pred['T_pred']}")
+    print(f"Td_pred : {pred['Td_pred']}")
+    print(f"RH_pred : {pred['RH_pred']}")
+
+    # --------------------------
+    # Residuals
+    # --------------------------
     res_T = row["T (degC)"] - pred["T_pred"]
     res_Td = row["Tdew (degC)"] - pred["Td_pred"]
     res_RH = row["rh (%)"] - pred["RH_pred"]
 
     res_mag = (res_T**2 + res_Td**2 + res_RH**2) ** 0.5
 
+    print("\nResiduals")
+    print(f"res_T  : {res_T}")
+    print(f"res_Td : {res_Td}")
+    print(f"res_RH : {res_RH}")
+    print(f"res_mag: {res_mag}")
+
+    # --------------------------
+    # Classifier
+    # --------------------------
     X = [[
         row["T (degC)"],
         row["Tdew (degC)"],
@@ -62,11 +97,22 @@ for i in range(1, len(df)):
     ]]
 
     X_scaled = scaler.transform(X)
-
-    #  Classifier decision
     label = classifier.predict(X_scaled)[0]
 
-    #  Gate update
+    print("\nClassifier Decision")
+    print("Label:", "ANOMALY" if label == 1 else "CLEAN")
+
+    # --------------------------
+    # Trusted state BEFORE
+    # --------------------------
+    print("\nTrusted State BEFORE update")
+    print(f"T  : {dt.state.T}")
+    print(f"Td : {dt.state.Td}")
+    print(f"RH : {dt.state.RH}")
+
+    # --------------------------
+    # Gate decision
+    # --------------------------
     gate.update_state(
         dt,
         {
@@ -78,6 +124,17 @@ for i in range(1, len(df)):
         label
     )
 
+    # --------------------------
+    # Trusted state AFTER
+    # --------------------------
+    print("\nTrusted State AFTER update")
+    print(f"T  : {dt.state.T}")
+    print(f"Td : {dt.state.Td}")
+    print(f"RH : {dt.state.RH}")
+
+    # --------------------------
+    # Save results
+    # --------------------------
     results.append({
         "Date Time": ts,
         "T_pred": pred["T_pred"],
@@ -86,10 +143,14 @@ for i in range(1, len(df)):
         "classifier_label": label
     })
 
+    # Slow streaming effect
+    time.sleep(0.5)
+
+
 # ==========================
 # Save results
 # ==========================
 out = pd.DataFrame(results)
 out.to_excel("outputs/streaming_results.xlsx", index=False)
 
-print("Streaming simulation complete.")
+

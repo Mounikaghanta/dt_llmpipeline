@@ -1,38 +1,43 @@
 class AnomalyGate:
-    """
-    Decision module that controls Digital Twin state assimilation.
 
-    If classifier label == 0 (clean):
-        update DT with real sensor measurement.
+    def __init__(self):
+        pass
 
-    If classifier label == 1 (anomaly):
-        update DT with DT's own predicted values.
-    """
-
-    def update_state(self, dt, sensor_row: dict, prediction: dict, anomaly_label: int):
+    def update_state(self, dt, measurement, prediction, label):
         """
-        Parameters
-        dt : DigitalTwinV2
-            The digital twin instance.
-        sensor_row : dict
-            {"T": float, "Td": float, "RH": float}
-        prediction : dict
-            {"T_pred": float, "Td_pred": float, "RH_pred": float}
-        anomaly_label : int
-            0 = clean, 1 = anomaly
+        Decision logic for updating the Digital Twin trusted state.
+
+        label = 0 → CLEAN → trust sensor
+        label = 1 → ANOMALY → trust DT prediction
         """
 
-        if anomaly_label == 0:
-            # Clean → trust measurement
-            dt.update_state(
-                sensor_row["T"],
-                sensor_row["Td"],
-                sensor_row["RH"]
-            )
+        # ------------------------------
+        # CLEAN sensor → trust sensor
+        # ------------------------------
+        if label == 0:
+
+            print("\nDecision: CLEAN → using SENSOR measurement")
+
+            trusted_T  = measurement["T"]
+            trusted_Td = measurement["Td"]
+            trusted_RH = measurement["RH"]
+
+        # ------------------------------
+        # ANOMALY → trust DT prediction
+        # ------------------------------
         else:
-            # Anomaly → trust prediction
-            dt.update_state(
-                prediction["T_pred"],
-                prediction["Td_pred"],
-                prediction["RH_pred"]
-            )
+
+            print("\nDecision: ANOMALY → replacing with DT prediction")
+
+            trusted_T  = prediction["T_pred"]
+            trusted_Td = prediction["Td_pred"]
+            trusted_RH = prediction["RH_pred"]
+
+        # ------------------------------
+        # Update Digital Twin state
+        # ------------------------------
+        dt.update_state(
+            trusted_T,
+            trusted_Td,
+            trusted_RH
+        )
